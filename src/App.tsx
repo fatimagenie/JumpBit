@@ -35,7 +35,8 @@ export default function App() {
     x: 50,
     y: BOARD_HEIGHT - 20 - DINO_HEIGHT,
     width: DINO_WIDTH,
-    height: DINO_HEIGHT
+    height: DINO_HEIGHT,
+    isDead: false
   });
 
   useEffect(() => {
@@ -107,10 +108,6 @@ export default function App() {
       ctx.lineTo(BOARD_WIDTH, groundY);
       ctx.stroke();
 
-      // Draw Dino (Black object for now)
-      ctx.fillStyle = "black";
-      ctx.fillRect(dino.current.x, dino.current.y, dino.current.width, dino.current.height);
-
       // Process and Draw Cacti
       for (let i = 0; i < cactusArray.current.length; i++) {
         let cactus = cactusArray.current[i];
@@ -125,7 +122,21 @@ export default function App() {
         // Check Collision
         if (detectCollision(dino.current, cactus)) {
           gameOverRef.current = true;
-          
+          dino.current.isDead = true;
+        }
+      }
+
+      // Draw Dino (Black object normally, Dark Red with X_X placeholder if 'dead')
+      ctx.fillStyle = dino.current.isDead ? "darkred" : "black";
+      ctx.fillRect(dino.current.x, dino.current.y, dino.current.width, dino.current.height);
+      
+      if (dino.current.isDead) { // Simulated 'dead' image
+          ctx.fillStyle = "white";
+          ctx.font = "20px 'Courier New'";
+          ctx.fillText("X_X", dino.current.x + 25, dino.current.y + 40);
+      }
+
+      if (gameOverRef.current) {
           ctx.fillStyle = "red";
           ctx.font = "bold 30px 'Courier New'";
           ctx.textAlign = "center";
@@ -134,7 +145,6 @@ export default function App() {
           cancelAnimationFrame(animationId);
           clearTimeout(cactusTimer);
           return; // Stop updating
-        }
       }
 
       // Memory Cleanup: Remove leftmost cacti off screen
