@@ -23,6 +23,11 @@ export default function App() {
   // States and refs for game logic
   const isAntigravityRef = useRef(false);
   const [isAntigravity, setIsAntigravity] = useState(false);
+  
+  const gameOverRef = useRef(false);
+  const cactusArray = useRef<any[]>([]);
+  const cactusSpeedX = -8;
+
   const velocityY = useRef(0);
   const gravity = 0.2; // Adjusted for floating jump
 
@@ -45,8 +50,37 @@ export default function App() {
     contextRef.current = context;
 
     let animationId: number;
+    let cactusTimer: ReturnType<typeof setTimeout>;
+
+    // Collision detection utility
+    const detectCollision = (a: any, b: any) => {
+      return a.x < b.x + b.width &&   
+             a.x + a.width > b.x &&   
+             a.y < b.y + b.height &&  
+             a.y + a.height > b.y;    
+    };
+
+    // Cactus spawning logic
+    const placeCactus = () => {
+      if (gameOverRef.current) return;
+
+      const cactus = {
+        x: BOARD_WIDTH,
+        y: BOARD_HEIGHT - 20 - 70, // Basic cactus height
+        width: 40,
+        height: 70
+      };
+
+      cactusArray.current.push(cactus);
+
+      // Random wait between 1.5 to 2 seconds
+      const nextSpawn = Math.random() * 500 + 1500;
+      cactusTimer = setTimeout(placeCactus, nextSpawn);
+    };
 
     const update = () => {
+      if (gameOverRef.current) return;
+      
       animationId = requestAnimationFrame(update);
       const ctx = contextRef.current;
       if (!ctx) return;
@@ -54,23 +88,18 @@ export default function App() {
       // Clear board
       ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
 
-      // Determine current gravity (Antigravity mode makes it even slower, or you can just use basic gravity)
+      // Apply Gravity
       let currentGravity = isAntigravityRef.current ? 0.05 : gravity;
-
-      // Apply gravity to velocity
       velocityY.current += currentGravity;
-      
-      // Calculate Dino's vertical position (y)
       dino.current.y += velocityY.current;
 
       const groundY = BOARD_HEIGHT - 20;
-      // Prevent dino from falling below the ground
       if (dino.current.y > groundY - dino.current.height) {
         dino.current.y = groundY - dino.current.height;
         velocityY.current = 0;
       }
 
-      // Draw Ground Line
+      // Draw Ground
       ctx.strokeStyle = "#535353";
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -78,26 +107,61 @@ export default function App() {
       ctx.lineTo(BOARD_WIDTH, groundY);
       ctx.stroke();
 
-      // Draw Dino
+      // Draw Dino (Black object for now)
       ctx.fillStyle = "black";
       ctx.fillRect(dino.current.x, dino.current.y, dino.current.width, dino.current.height);
 
-      // Status text for canvas
+      // Process and Draw Cacti
+      for (let i = 0; i < cactusArray.current.length; i++) {
+        let cactus = cactusArray.current[i];
+        
+        // Move left
+        cactus.x += cactusSpeedX;
+        
+        // Draw Cactus (Green object for now)
+        ctx.fillStyle = "green";
+        ctx.fillRect(cactus.x, cactus.y, cactus.width, cactus.height);
+
+        // Check Collision
+        if (detectCollision(dino.current, cactus)) {
+          gameOverRef.current = true;
+          
+          ctx.fillStyle = "red";
+          ctx.font = "bold 30px 'Courier New'";
+          ctx.textAlign = "center";
+          ctx.fillText("GAME OVER", BOARD_WIDTH / 2, BOARD_HEIGHT / 2);
+          
+          cancelAnimationFrame(animationId);
+          clearTimeout(cactusTimer);
+          return; // Stop updating
+        }
+      }
+
+      // Memory Cleanup: Remove leftmost cacti off screen
+      while (cactusArray.current.length > 0 && cactusArray.current[0].x < -100) {
+        cactusArray.current.shift();
+      }
+
+      // Status text
       ctx.fillStyle = "#535353";
       ctx.font = "14px 'Courier New'";
       ctx.textAlign = "left";
       ctx.fillText(`Space: Jump | G: Antigravity (${isAntigravityRef.current ? 'ON' : 'OFF'})`, 10, 20);
     };
 
-    // Start game loop
+    // Start spawning and loops
+    cactusTimer = setTimeout(placeCactus, 1500);
     animationId = requestAnimationFrame(update);
 
-    // Key Listeners
+    // Controls
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent restarting if we want a formal reset button later, but for now space just jumps
+      if (gameOverRef.current) return;
+
       if (e.code === 'Space' || e.code === 'ArrowUp') {
         const groundY = BOARD_HEIGHT - 20;
         if (dino.current.y === groundY - dino.current.height) {
-           velocityY.current = -10; // Jump velocity
+           velocityY.current = -10;
         }
       } else if (e.code === 'KeyG' || e.key === 'g') {
         isAntigravityRef.current = !isAntigravityRef.current;
@@ -109,6 +173,7 @@ export default function App() {
 
     return () => {
       cancelAnimationFrame(animationId);
+      clearTimeout(cactusTimer);
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
