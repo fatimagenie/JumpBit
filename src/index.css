@@ -1,12 +1,40 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --bg-color: #FFCC80; /* Sunset Orange */
+    --text-color: #3E2723; /* Dark Brown */
+    --rabbit-color: #FFF8E1; /* Cream */
+    --cactus-color: #1B5E20; /* Forest Green */
+    --rabbit-dead-color: #C62828; /* Red */
+    --hud-highlight: #E65100; /* Deep Orange */
+    --ground-color: #2E7D32; /* Grass Green */
+    --cloud-color: rgba(255, 255, 255, 0.8);
+    --tree-color: #1B5E20;
+  }
+
+  .dark-mode {
+    --bg-color: #1A237E; /* Night Blue */
+    --text-color: #E8EAF6;
+    --rabbit-color: #FFFFFF;
+    --cactus-color: #4CAF50;
+    --rabbit-dead-color: #FF5252;
+    --hud-highlight: #FFAB40;
+    --ground-color: #1B5E20;
+    --cloud-color: rgba(255, 255, 255, 0.3);
+    --tree-color: #0D47A1;
+  }
+
   body {
-    @apply bg-[#f7f7f7] flex items-center justify-center min-h-screen m-0 overflow-hidden;
+    @apply flex items-center justify-center min-h-screen m-0 overflow-hidden;
     font-family: 'Courier New', Courier, monospace;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 1.5s ease, color 1.5s ease;
   }
 }
 
 #board {
-  @apply bg-white border-b-2 border-gray-300 shadow-sm;
+  @apply border-b-4 border-[#3E2723] shadow-lg;
+  background-color: transparent;
 }
